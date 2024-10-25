@@ -115,12 +115,25 @@ static void common(const char *file, const char *rdwr) {
 	}
 	memcpy(args, argsStart, argsEnd - argsStart);
 	
+	// trim trailing whitespace
+	for (int i = argsEnd - (argsStart) - 2; i != 0; i--) {
+		// whitespace?
+		if (args[i] == ' ') {
+			// nuke it
+			args[i] = '\0';
+		}
+		else {
+			// no longer trailing whitespace, break
+			printf("char 0x%02X at args[%d] != 0x00, end trim\r\n", args[i], i);
+			break;
+		}
+	}
 }
 
 static void doPrint(const char *file) {
 	fd = open(file, O_RDONLY);
 	common(file, "read-only");
-	printf("Current kernel cmdline: %s\r\n", args);
+	printf("Current kernel cmdline: '%s'\r\n", args);
 }
 
 static void doReplace(const char *file, const char *newArgs) {
@@ -129,14 +142,13 @@ static void doReplace(const char *file, const char *newArgs) {
 
 	fd = open(file, O_RDWR);
 	common(file, "read-write");
-	printf("Current kernel cmdline: %s\r\n", args);
-	printf("New kernel cmdline: %s\r\n", newArgs);
+	printf("Current kernel cmdline: '%s'\r\n", args);
+	printf("New kernel cmdline: '%s'\r\n", newArgs);
 
 	memset(argsStart, ' ', argsEnd - argsStart);
 	*(argsEnd - 1) ='\0';
 	
 	// copy without NULL terminator
-	printf("In kernel: %s\r\n", argsStart);
 	memcpy(argsStart, newArgs, strlen(newArgs) - 1);
 
 	// go back to the start of the file, reading placed the read head at the end
