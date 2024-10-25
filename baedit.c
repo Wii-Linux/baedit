@@ -134,14 +134,18 @@ static void doReplace(const char *file, const char *newArgs) {
 	printf("New kernel cmdline: %s\r\n", newArgs);
 
 	memset(argsStart, ' ', argsEnd - argsStart);
-	*argsEnd ='\0';
+	*(argsEnd - 1) ='\0';
 	
 	// copy without NULL terminator
 	printf("New kernel cmdline: %s (%zu)\r\n", newArgs, strlen(newArgs));
 	printf("In kernel: %s\r\n", argsStart);
-	memcpy(argsStart, newArgs, strlen(newArgs));
+	memcpy(argsStart, newArgs, strlen(newArgs) - 1);
 	printf("In kernel: %s\r\n", argsStart);
 
+	// go back to the start of the file, reading placed the read head at the end
+	lseek(fd, 0, SEEK_SET);
+
+	// do the write
 	ssize_t wrote = write(fd, kernel, fileSize);
 	if (wrote == -1) {
 		fprintf(stderr, ERR "Failed to write %zu bytes to %s: %s\r\n" RESET, fileSize, file, strerror(errno));
