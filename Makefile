@@ -3,7 +3,12 @@
 ifeq ($(origin CC),default)
 CC = gcc
 endif
-CFLAGS ?= -O2
+CFLAGS ?= -O2 -Wall -Wextra
+
+ifeq ($(DEBUG),1)
+CFLAGS += -fsanitize=address,undefined -g
+LDFLAGS += -lasan -lubsan
+endif
 
 
 all: baedit

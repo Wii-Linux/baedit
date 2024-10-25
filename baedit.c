@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <stdint.h>
+#include <assert.h>
 
 static const char startMarker[] = "mark.start=1";
 static const char endMarker[]   = "mark.end=1";
@@ -34,7 +35,7 @@ static void common(const char *file, const char *rdwr) {
 	fileSize = st.st_size;
 	kernel = malloc(fileSize);
 	if (!kernel) {
-		fprintf(stderr, ERR "Failed to allocate %d bytes of memory: %s\r\n" RESET, fileSize, strerror(errno));
+		fprintf(stderr, ERR "Failed to allocate %zu bytes of memory: %s\r\n" RESET, fileSize, strerror(errno));
 		close(fd);
 		exit(1);
 	}
@@ -45,15 +46,15 @@ static void common(const char *file, const char *rdwr) {
 		free(kernel);
 		exit(1);
 	}
-	if (r != fileSize) {
-		fprintf(stderr, ERR "Tried to read %d bytes from %s, but only got %d.\r\n" RESET, fileSize, file, r);
+	if ((size_t)r != fileSize) {
+		fprintf(stderr, ERR "Tried to read %zu bytes from %s, but only got %zd.\r\n" RESET, fileSize, file, r);
 		close(fd);
 		free(kernel);
 		exit(1);
 	}
 
 	// read successfully
-	printf("OK: read %d bytes\r\n", fileSize);
+	printf("OK: read %zu bytes\r\n", fileSize);
 
 	// find start marker
 	for (size_t i = 0; i != fileSize; i++) {
@@ -106,7 +107,7 @@ static void common(const char *file, const char *rdwr) {
 	puts("Found both start and end marker");
 	args = malloc(argsEnd - argsStart);
 	if (args == NULL) {
-		fprintf(stderr, ERR "Failed to allocated %d bytes to hold arguments: %s\r\n" RESET, argsEnd - argsStart, strerror(errno));
+		fprintf(stderr, ERR "Failed to allocated %zu bytes to hold arguments: %s\r\n" RESET, argsEnd - argsStart, strerror(errno));
 		close(fd);
 		free(kernel);
 		exit(1);
@@ -123,6 +124,9 @@ static void doPrint(const char *file) {
 }
 
 static void doReplace(const char *file, const char *newArgs) {
+	assert(file != NULL);
+	assert(newArgs != NULL);
+
 	fd = open(file, O_RDWR);
 	common(file, "read-write");
 	printf("Current kernel cmdline: %s\r\n", args);
@@ -132,25 +136,28 @@ static void doReplace(const char *file, const char *newArgs) {
 	*argsEnd ='\0';
 	
 	// copy without NULL terminator
+	printf("New kernel cmdline: %s (%zu)\r\n", newArgs, strlen(newArgs));
+	printf("In kernel: %s\r\n", argsStart);
 	memcpy(argsStart, newArgs, strlen(newArgs));
+	printf("In kernel: %s\r\n", argsStart);
 
 	ssize_t wrote = write(fd, kernel, fileSize);
 	if (wrote == -1) {
-		fprintf(stderr, ERR "Failed to write %d bytes to %s: %s\r\n" RESET, fileSize, file);
+		fprintf(stderr, ERR "Failed to write %zu bytes to %s: %s\r\n" RESET, fileSize, file, strerror(errno));
 		close(fd);
 		free(kernel);
 		free(args);
 		exit(1);
 	}
-	if (wrote != fileSize) {
-		fprintf(stderr, ERR "Tried to write %d bytes to %s, but only wrote %d" RESET);
+	if ((size_t)wrote != fileSize) {
+		fprintf(stderr, ERR "Tried to write %zu bytes to %s, but only wrote %zd" RESET, fileSize, file, wrote);
 		close(fd);
 		free(kernel);
 		free(args);
 		exit(1);
 	}
 
-	printf("OK: %d bytes written\r\n", fileSize, file);
+	printf("OK: %zu bytes written to %s\r\n", fileSize, file);
 }
 
 static void usage(const char *progName) {
@@ -158,7 +165,7 @@ static void usage(const char *progName) {
 "Usage: %s [kernel] <'new cmdline'>\r\n\
 \r\n\
 Example, to print the current cmdline: %s v4_5_0.krn\r\n\
-Example, to replace the cmdline:       %s v4_5_0.krn 'root=/dev/sda1 video=gcnfb:tv=auto,nostalgic rootwait consolewait loglevel=4\r\n", progName);
+Example, to replace the cmdline:       %s v4_5_0.krn 'root=/dev/sda1 video=gcnfb:tv=auto,nostalgic rootwait consolewait loglevel=4\r\n", progName, progName, progName);
 }
 
 int main(int argc, char *argv[]) {
@@ -171,7 +178,6 @@ int main(int argc, char *argv[]) {
 	close(fd);
 	free(kernel);
 	free(args);
-	printf("aaa\r\n");
 
 	return 0;
 }
