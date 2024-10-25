@@ -113,7 +113,6 @@ static void common(const char *file, const char *rdwr) {
 		free(kernel);
 		exit(1);
 	}
-	printf("argsStart: %p, argsEnd = %p\r\n", argsStart, argsEnd);
 	memcpy(args, argsStart, argsEnd - argsStart);
 	
 }
@@ -137,10 +136,8 @@ static void doReplace(const char *file, const char *newArgs) {
 	*(argsEnd - 1) ='\0';
 	
 	// copy without NULL terminator
-	printf("New kernel cmdline: %s (%zu)\r\n", newArgs, strlen(newArgs));
 	printf("In kernel: %s\r\n", argsStart);
 	memcpy(argsStart, newArgs, strlen(newArgs) - 1);
-	printf("In kernel: %s\r\n", argsStart);
 
 	// go back to the start of the file, reading placed the read head at the end
 	lseek(fd, 0, SEEK_SET);
