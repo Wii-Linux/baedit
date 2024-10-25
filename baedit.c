@@ -105,7 +105,8 @@ static void common(const char *file, const char *rdwr) {
 		exit(1);
 	}
 	puts("Found both start and end marker");
-	args = malloc(argsEnd - argsStart);
+	args = malloc((argsEnd - argsStart) + 8);
+	memset(args, 0, (argsEnd - argsStart) + 8);
 	if (args == NULL) {
 		fprintf(stderr, ERR "Failed to allocated %zu bytes to hold arguments: %s\r\n" RESET, argsEnd - argsStart, strerror(errno));
 		close(fd);
